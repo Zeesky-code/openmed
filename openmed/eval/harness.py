@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import inspect
 import sys
 import time
 from dataclasses import dataclass, field, replace
@@ -247,12 +248,15 @@ def _shared_default_model_runner() -> ModelRunner:
             from openmed.core.models import ModelLoader
 
             shared_loader = ModelLoader()
-        return default_model_runner(
-            fixture,
-            model_name,
-            device,
-            loader=shared_loader,
+        kwargs: dict[str, Any] = {}
+        parameters = inspect.signature(default_model_runner).parameters
+        accepts_loader = "loader" in parameters or any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters.values()
         )
+        if accepts_loader:
+            kwargs["loader"] = shared_loader
+        return default_model_runner(fixture, model_name, device, **kwargs)
 
     return run_fixture
 

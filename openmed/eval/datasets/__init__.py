@@ -9,6 +9,18 @@ from .dua_stubs import (
     load_dua_corpus,
 )
 from .licenses import DatasetLicense, PUBLIC_DATASET_LICENSES, license_for
+from .clinical_phi import (
+    CLINICAL_PHI_MANIFEST_ID,
+    CLINICAL_PHI_MANIFEST_REF,
+    CLINICAL_PRIVACY_MODEL_ID,
+    ClinicalPHIDatasetManifest,
+    ClinicalPHISource,
+    GateFamilyRequirement,
+    clinical_phi_manifest_hash,
+    load_clinical_phi_manifest,
+    resolve_clinical_phi_source,
+    validate_clinical_phi_manifest,
+)
 from .public import (
     DatasetLoadResult,
     DatasetUnavailable,
@@ -30,6 +42,12 @@ __all__ = [
     "DatasetLicense",
     "DatasetLoadResult",
     "DatasetUnavailable",
+    "CLINICAL_PHI_MANIFEST_ID",
+    "CLINICAL_PHI_MANIFEST_REF",
+    "CLINICAL_PRIVACY_MODEL_ID",
+    "ClinicalPHIDatasetManifest",
+    "ClinicalPHISource",
+    "GateFamilyRequirement",
     "PUBLIC_DATASETS",
     "PUBLIC_DATASET_LICENSES",
     "PUBLIC_LABEL_MAPS",
@@ -40,8 +58,12 @@ __all__ = [
     "all_dua_stubs",
     "assert_no_gated_content_committed",
     "dua_stub_for",
+    "clinical_phi_manifest_hash",
     "license_for",
+    "load_clinical_phi_manifest",
     "load_dua_corpus",
     "load_public_dataset",
     "map_public_label",
+    "resolve_clinical_phi_source",
+    "validate_clinical_phi_manifest",
 ]
