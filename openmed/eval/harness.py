@@ -244,10 +244,6 @@ def _shared_default_model_runner() -> ModelRunner:
         device: str,
     ) -> Iterable[Any]:
         nonlocal shared_loader
-        if shared_loader is None:
-            from openmed.core.models import ModelLoader
-
-            shared_loader = ModelLoader()
         kwargs: dict[str, Any] = {}
         parameters = inspect.signature(default_model_runner).parameters
         accepts_loader = "loader" in parameters or any(
@@ -255,6 +251,10 @@ def _shared_default_model_runner() -> ModelRunner:
             for parameter in parameters.values()
         )
         if accepts_loader:
+            if shared_loader is None:
+                from openmed.core.models import ModelLoader
+
+                shared_loader = ModelLoader()
             kwargs["loader"] = shared_loader
         return default_model_runner(fixture, model_name, device, **kwargs)
 

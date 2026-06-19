@@ -5,6 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 import time
 
+from openmed.eval import harness
 from openmed.eval.harness import BenchmarkFixture, run_benchmark
 
 
@@ -102,3 +103,26 @@ def test_default_runner_reuses_loader_for_steady_state_samples(monkeypatch):
     assert seen_loaders == [created_loaders[0]] * 3
     assert report.metrics["latency"]["cold_start_ms"] is not None
     assert report.metrics["latency"]["count"] == 2
+
+
+def test_patched_default_runner_without_loader_does_not_construct_model_loader(
+    monkeypatch,
+):
+    """Unit-test runners avoid optional model backend dependencies."""
+
+    def forbidden_loader():
+        raise AssertionError("ModelLoader should not be constructed")
+
+    def fake_default_runner(fixture, model_name, device):
+        return [{"start": 8, "end": 12, "label": "PERSON"}]
+
+    monkeypatch.setattr("openmed.core.models.ModelLoader", forbidden_loader)
+    monkeypatch.setattr(harness, "default_model_runner", fake_default_runner)
+
+    report = run_benchmark(
+        [_fixture("f1")],
+        suite="cold-start-test",
+        model_name="test-model",
+    )
+
+    assert report.metrics["latency"]["cold_start_ms"] is not None
