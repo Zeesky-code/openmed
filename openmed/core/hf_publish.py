@@ -81,6 +81,7 @@ def build_manifest_row(
     source_model_id: str,
     artifact_dir: str | Path,
     format_name: str,
+    formats: list[str] | tuple[str, ...] | None = None,
     released: str | None = None,
     recipe: Any | None = None,
     data_manifest: Any | None = None,
@@ -94,6 +95,7 @@ def build_manifest_row(
     released = released or datetime.now(timezone.utc).date().isoformat()
     artifact_hash = artifact_sha256(artifact_dir)
     manifest_format = _manifest_format_name(format_name)
+    manifest_formats = _manifest_format_names(formats or [format_name])
     reproducibility_hash = compute_reproducibility_hash(
         recipe=recipe or _default_repro_recipe(
             repo_id=repo_id,
@@ -119,7 +121,7 @@ def build_manifest_row(
         "param_count": _param_count(repo_id),
         "architecture": _architecture(repo_id, config),
         "base_model": source_model_id,
-        "formats": [manifest_format],
+        "formats": manifest_formats,
         "canonical_labels": labels,
         "benchmark": {"dataset": None, "micro_f1": None, "recall": None},
         "arxiv": DEFAULT_ARXIV,
@@ -183,6 +185,7 @@ def publish_artifact(
     artifact_dir: str | Path,
     source_model_id: str,
     format_name: str,
+    formats: list[str] | tuple[str, ...] | None = None,
     repo_id: str | None = None,
     org: str = DEFAULT_ORG,
     version: int = 1,
@@ -225,6 +228,7 @@ def publish_artifact(
         source_model_id=source_model_id,
         artifact_dir=artifact_dir,
         format_name=format_name,
+        formats=formats,
         released=released,
         recipe=recipe,
         data_manifest=data_manifest,
@@ -332,6 +336,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         dest="format_name",
         help="Published artifact format, such as mlx-fp, mlx-8bit, or coreml",
     )
+    parser.add_argument(
+        "--formats",
+        default=None,
+        help="Comma-separated manifest formats when one repo carries multiple artifacts",
+    )
     parser.add_argument("--repo-id", default=None, help="Explicit target repo id")
     parser.add_argument("--org", default=DEFAULT_ORG, help="Target organization")
     parser.add_argument("--version", type=int, default=1, help="Version suffix for new repos")
@@ -411,6 +420,7 @@ def main(argv: list[str] | None = None) -> None:
         artifact_dir=args.artifact_dir,
         source_model_id=args.model,
         format_name=args.format_name,
+        formats=_parse_formats_arg(args.formats),
         repo_id=args.repo_id,
         org=args.org,
         version=args.version,
@@ -497,6 +507,17 @@ def _manifest_format_name(format_name: str) -> str:
     return normalized
 
 
+def _manifest_format_names(format_names: list[str] | tuple[str, ...]) -> list[str]:
+    result: list[str] = []
+    seen: set[str] = set()
+    for format_name in format_names:
+        normalized = _manifest_format_name(format_name)
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            result.append(normalized)
+    return result
+
+
 def _read_optional_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
@@ -513,6 +534,13 @@ def _parse_json_object_arg(value: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise HfPublishError("--baseline-metrics must be a JSON object")
     return payload
+
+
+def _parse_formats_arg(value: str | None) -> list[str] | None:
+    if value is None:
+        return None
+    formats = [item.strip() for item in value.split(",") if item.strip()]
+    return formats or None
 
 
 def _refresh_status_outputs(
